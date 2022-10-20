@@ -1,5 +1,10 @@
 # runfast
 
+## OLD VERSION
+
+this is the fish version, which works but is not in active development due to it
+being bad.
+
 ## What is it?
 
 This is a program intended to be run in a project directory to set up a project
