@@ -7,36 +7,35 @@ use skim::*;
 pub struct Runner {
     pub name: String,
     pub cmd: String,
-    pub args: Option<Vec<String>>,
     pub close_fast: bool,
 }
 
 impl Runner {
-    pub fn new(name: &str, cmd: &str, args: Option<Vec<String>>, close_fast: bool) -> Runner {
+    pub fn new(name: &str, cmd: &str, close_fast: bool) -> Runner {
         Runner {
             name: name.to_string(),
             cmd: cmd.to_string(),
-            args,
             close_fast
         }
     }
 
-    pub fn new_from_string(s: &String) -> Runner {
+    pub fn new_from_raw(_: &RunnerRaw) -> Runner {
         //TODO: likely using the toml crate, implement parsing a toml block as
         //a runner, given the whole thing as a string
         todo!()
     }
 
     pub fn run(&self) {
-        let mut c = Command::new(&self.cmd);
-        if self.args.is_some() {
-            c.args(self.args.as_ref().unwrap());
+        let mut c = Command::new("bash");
+        c.arg("-c");
+        c.arg(&self.cmd);
+        let result = c.status();
+        if result.is_err() {
+            println!("Error Running Command: {:#?}", result);
         }
-        c.spawn()
-         .expect("could not spawn command");
         if !self.close_fast {
             println!("Press ENTER to exit...");
-            let _ = Command::new("pause").status();
+            let _ = Command::new("bash").arg("-c").arg("read").status();
         }
     }
 }

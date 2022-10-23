@@ -7,8 +7,10 @@ use runner::RunnerRaw;
 use runner::Runner;
 
 pub fn main() {
-    let x = select_new_runner();
-    println!("{:?}", x);
+    // let x = select_new_runner();
+    let testrunner = Runner::new("haskell", "ghci", false);
+    // println!("{:?}", x);
+    testrunner.run();
 }
 
 fn select_new_runner() -> Option<RunnerRaw> {
@@ -27,8 +29,6 @@ fn select_new_runner() -> Option<RunnerRaw> {
     }
 
     drop(tx);
-
-    let item_reader = SkimItemReader::default();
 
 
     let r = Skim::run_with(&options, Some(rx));
@@ -59,7 +59,7 @@ fn select_new_runner() -> Option<RunnerRaw> {
 
 fn generate_runner_list() -> HashMap<String, RunnerRaw> {
     //TODO: do this properly, loading from /etc/runquick
-    //and ~/.config/runquick/runners.ini
+    //and ~/.config/runquick/runners.toml
 
     let mut runners: HashMap<String, RunnerRaw> = HashMap::new();
 
