@@ -11,6 +11,8 @@ pub fn main() {
     let testrunner = Runner::new("haskell", "ghci", false);
     // println!("{:?}", x);
     testrunner.run();
+
+    runner::load_runners();
 }
 
 fn select_new_runner() -> Option<RunnerRaw> {
