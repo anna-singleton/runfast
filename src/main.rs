@@ -1,16 +1,19 @@
 extern crate skim;
 use skim::prelude::*;
-use std::{io::Cursor, collections::HashMap};
+use std::collections::HashMap;
 
 mod runner;
+use runner::RunnerRaw;
 use runner::Runner;
 
 pub fn main() {
-    let x = select_new_runner();
-    println!("{:?}", x);
+    // let x = select_new_runner();
+    let testrunner = Runner::new("haskell", "ghci", false);
+    // println!("{:?}", x);
+    testrunner.run();
 }
 
-fn select_new_runner() -> Option<Runner> {
+fn select_new_runner() -> Option<RunnerRaw> {
     let options = SkimOptionsBuilder::default()
         .preview(Some(""))
         .preview_window(Some(""))
@@ -26,8 +29,6 @@ fn select_new_runner() -> Option<Runner> {
     }
 
     drop(tx);
-
-    let item_reader = SkimItemReader::default();
 
 
     let r = Skim::run_with(&options, Some(rx));
@@ -56,15 +57,15 @@ fn select_new_runner() -> Option<Runner> {
     }
 }
 
-fn generate_runner_list() -> HashMap<String, Runner> {
+fn generate_runner_list() -> HashMap<String, RunnerRaw> {
     //TODO: do this properly, loading from /etc/runquick
-    //and ~/.config/runquick/runners.ini
+    //and ~/.config/runquick/runners.toml
 
-    let mut runners: HashMap<String, Runner> = HashMap::new();
+    let mut runners: HashMap<String, RunnerRaw> = HashMap::new();
 
-    runners.insert("rust".to_string(),Runner::new("rust", "cmd=cargo run"));
-    runners.insert("rust test".to_string(),Runner::new("rust test", "cmd=cargo run"));
-    runners.insert("haskell".to_string(),Runner::new("haskell", "cmd=ghci"));
+    runners.insert("rust".to_string(),RunnerRaw::new("rust", "cmd=cargo run"));
+    runners.insert("rust test".to_string(),RunnerRaw::new("rust test", "cmd=cargo run"));
+    runners.insert("haskell".to_string(),RunnerRaw::new("haskell", "cmd=ghci"));
 
     runners
 }
