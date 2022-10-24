@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fs::File;
 use std::fs::read_to_string;
 use std::io::Write;
@@ -17,18 +18,21 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(name: &str, cmd: &str, close_fast: bool) -> Runner {
+    fn new_from_config(conf: &RunnerConfig) -> Runner {
         Runner {
-            name: name.to_string(),
-            cmd: cmd.to_string(),
-            quit_fast: close_fast
+            name: match &conf.name {
+                Some(n) => n.clone(),
+                None => "Default Runner Name".to_string(),
+            },
+            cmd: match &conf.cmd {
+                Some(c) => c.clone(),
+                None => "echo 'command not set'".to_string(),
+            },
+            quit_fast: match conf.quit_fast {
+                Some(q) => q,
+                None => false,
+            }
         }
-    }
-
-    pub fn new_from_raw(_: &RunnerRaw) -> Runner {
-        //TODO: likely using the toml crate, implement parsing a toml block as
-        //a runner, given the whole thing as a string
-        todo!()
     }
 
     pub fn run(&self) {
@@ -46,10 +50,35 @@ impl Runner {
     }
 }
 
+impl SkimItem for Runner {
+    fn text(&self) -> prelude::Cow<str> {
+        Cow::Borrowed(&self.name)
+    }
+
+    fn preview(&self, _context: PreviewContext) -> ItemPreview {
+        let mut prev = String::new();
+        prev.push_str("[PARAMS]\n");
+
+        prev.push_str("name=");
+        prev.push_str(self.name.as_str());
+        prev.push_str("\n");
+
+        prev.push_str("cmd=");
+        prev.push_str(self.cmd.as_str());
+        prev.push_str("\n");
+
+        prev.push_str("quit_fast=");
+        prev.push_str(&self.quit_fast.to_string());
+        prev.push_str("\n");
+
+        ItemPreview::Text(prev)
+    }
+}
+
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct Config {
-    defaults: Option<RunnerConfig>,
     runners: Option<Vec<RunnerConfig>>,
 }
 
@@ -57,52 +86,76 @@ struct Config {
 // a complete config defined, but we can construct one out of RUNNER_DEFAULTS
 // and the defaults in both config files
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct RunnerConfig {
     name: Option<String>,
     cmd: Option<String>,
+    vars: Option<HashMap<String, String>>,
     quit_fast: Option<bool>,
 }
 
-// defaults to use if [defaults] is not defined, or incompletely defined in
-// the config file(s)
-const RUNNER_DEFAULTS: RunnerConfig = RunnerConfig {
-    name: None,
-    cmd: None,
-    quit_fast: Some(false),
-};
-
-pub fn load_runners() {
+pub fn load_runners() -> Vec<Runner> {
     // try to load ~/.config/runfast/defaults.toml and ~/.config/runfast/runners.toml
     // prefer values in runners.toml if there are clashes
-    if let Some(base_dirs) = BaseDirs::new() {
-        // get default config directory (usually ~/.config/)
-        let confdir = base_dirs.config_dir();
+    let base_dirs = BaseDirs::new().unwrap();
 
-        // load default config
-        let default_path = confdir.join("runfast/defaults.toml");
-        let mut default_configs: Option<Config> = None;
-        if !default_path.exists() {
-            generate_default_config(&default_path);
-            let default_confstring = read_to_string(default_path).unwrap();
-            match toml::from_str::<Config>(&default_confstring) {
-                Ok(conf) => default_configs = Some(conf),
-                Err(e) => panic!("Could not parse default config: {}", e),
-            }
-        }
-        println!("Default Config: {:#?}", default_configs);
+    // get default config directory (usually ~/.config/)
+    let confdir = base_dirs.config_dir();
 
-        // load user config
-        let userconf_path = confdir.join("runfast/runners.toml");
-        let mut user_configs: Option<Config> = None;
-        if userconf_path.exists() {
-            let user_confstring = read_to_string(userconf_path).unwrap();
-            match toml::from_str::<Config>(&user_confstring) {
-                Ok(conf) => user_configs = Some(conf),
-                Err(e) => panic!("Could not parse user config: {}", e),
-            }
-        }
-        println!("User Config: {:#?}", user_configs);
+    // load default config
+    let default_path = confdir.join("runfast/defaults.toml");
+    if !default_path.exists() {
+        generate_default_config(&default_path);
     }
+    let default_configs: Option<Config>;
+    let default_confstring = read_to_string(default_path).unwrap();
+    match toml::from_str::<Config>(&default_confstring) {
+        Ok(conf) => default_configs = Some(conf),
+        Err(e) => panic!("Could not parse default config: {}", e),
+    }
+
+    // load user config
+    let userconf_path = confdir.join("runfast/runners.toml");
+    let mut user_configs: Option<Config> = None;
+    if userconf_path.exists() {
+        let user_confstring = read_to_string(userconf_path).unwrap();
+        match toml::from_str::<Config>(&user_confstring) {
+            Ok(conf) => user_configs = Some(conf),
+            Err(e) => panic!("Could not parse user config: {}", e),
+        }
+    }
+
+    let mut runners = get_runners_from_config(&user_configs);
+    let mut default_runners = get_runners_from_config(&default_configs);
+
+    while default_runners.len() > 0 {
+        let dr = default_runners.pop().unwrap();
+        let mut already_exists = false;
+        for r in &runners {
+            if dr.name == r.name {
+                already_exists = true;
+                break;
+            }
+        }
+        if !already_exists {
+            runners.push(dr);
+        }
+    }
+    runners
+}
+
+fn get_runners_from_config(conf: &Option<Config>) -> Vec<Runner> {
+    let mut runners:Vec<Runner> = Vec::new();
+
+    if let Some(c) = conf {
+        if let Some(r) = &c.runners {
+            for runc in r {
+                runners.push(Runner::new_from_config(runc))
+            }
+        }
+    }
+
+    runners
 }
 
 fn generate_default_config(default_path: &Path) {
@@ -125,39 +178,5 @@ fn generate_default_config(default_path: &Path) {
                 default_path.display(), e);
             panic!("No default config could be created, panicing");
         },
-    }
-}
-
-
-
-
-
-#[derive(Debug, Clone)]
-pub struct RunnerRaw {
-    name: String,
-    options: String
-}
-
-impl RunnerRaw {
-    pub fn new(name: &str, options: &str) -> RunnerRaw {
-        RunnerRaw {
-            name: name.to_string(),
-            options: options.to_string()
-        }
-    }
-}
-
-impl SkimItem for RunnerRaw {
-    fn text(&self) -> prelude::Cow<str> {
-        Cow::Borrowed(&self.name)
-    }
-
-    fn preview(&self, _context: PreviewContext) -> ItemPreview {
-        let mut prev = String::new();
-        prev.push_str("[");
-        prev.push_str(self.name.as_str());
-        prev.push_str("]\n");
-        prev.push_str(self.options.as_str());
-        ItemPreview::Text(prev)
     }
 }
