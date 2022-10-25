@@ -6,11 +6,11 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use directories::BaseDirs;
+use serde::{Serialize, Deserialize};
 
 use skim::*;
-use serde_derive::Deserialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Runner {
     pub name: String,
     pub cmd: String,
