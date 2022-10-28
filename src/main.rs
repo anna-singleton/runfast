@@ -4,6 +4,7 @@ use skim::prelude::*;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use clap::Parser;
 
 mod runner;
 use runner::Runner;
@@ -11,6 +12,14 @@ use runner::Runner;
 #[derive(Serialize, Deserialize, Debug)]
 struct RunnerCache {
     runners: HashMap<PathBuf, Runner>,
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about=None)]
+struct Cli {
+    #[arg(short, long="force-choose", help="Force runfast to choose a new runner, instead of \
+        looking for one that may already be set")]
+    force_choose_new: bool,
 }
 
 impl RunnerCache {
@@ -74,23 +83,42 @@ impl RunnerCache {
 }
 
 pub fn main() {
+    let cli = Cli::parse();
+
     let mut cache = RunnerCache::load();
 
-    let chosen_runner = match cache {
-        Some(ref mut c) => match c.try_get_runner() {
-            Some(rnr) => Some(rnr),
-            None => {
-                let rnr = select_new_runner();
-                if rnr.is_some() {
-                    c.add_runner(&rnr.as_ref().unwrap());
-                }
-                rnr
-            },
-        },
-        None => select_new_runner(),
-    };
+    let chosen;
 
-    match chosen_runner {
+    // TODO: this is disgusting there must be a better way
+    if cli.force_choose_new {
+        chosen = select_new_runner();
+        if chosen.is_some() {
+            if cache.is_some() {
+                cache.as_mut().unwrap().add_runner(&chosen.as_ref().unwrap());
+            }
+            else {
+                println!("Could not parse cache, intentionally not overwriting\
+                    , check it for errors.")
+            }
+        }
+    } else {
+        chosen = match cache {
+            Some(ref mut c) => match c.try_get_runner() {
+                Some(rnr) => Some(rnr), // runner found in the cache
+                None => { // runner not found in the cache
+                    let rnr = select_new_runner();
+                    if rnr.is_some() {
+                        c.add_runner(&rnr.as_ref().unwrap());
+                    }
+                    rnr
+                },
+            },
+            None => select_new_runner(),
+        };
+    }
+
+
+    match chosen {
         Some(cr) => cr.run(),
         None => println!("No Runner Selected"),
     };
@@ -136,7 +164,6 @@ fn select_new_runner() -> Option<Runner> {
     }
 
     let key = result.selected_items[0].output();
-    println!("Selected: {}", key);
 
     let mut chosen_runner = None;
     for r in runners {
