@@ -159,6 +159,12 @@ fn get_runners_from_config(conf: &Option<Config>) -> Vec<Runner> {
 }
 
 fn generate_default_config(default_path: &Path) {
+    let dirpath = default_path.parent().unwrap();
+    match std::fs::create_dir_all(default_path.parent().unwrap()) {
+        Ok(_) => (),
+        Err(e) => panic!("{:?} does not exist and could not be created, with\
+            error {}", dirpath, e),
+    }
     let default_conf = File::create(default_path);
     match default_conf {
         Ok(mut conf_file) => {
