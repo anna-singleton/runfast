@@ -34,10 +34,7 @@ impl Runner {
                 Some(c) => c.clone(),
                 None => "echo 'command not set'".to_string(),
             },
-            quit_fast: match conf.quit_fast {
-                Some(q) => q,
-                None => false,
-            }
+            quit_fast: conf.quit_fast.unwrap_or(false)
         }
     }
 
@@ -68,15 +65,15 @@ impl SkimItem for Runner {
 
         prev.push_str("name=");
         prev.push_str(self.name.as_str());
-        prev.push_str("\n");
+        prev.push('\n');
 
         prev.push_str("cmd=");
         prev.push_str(self.cmd.as_str());
-        prev.push_str("\n");
+        prev.push('\n');
 
         prev.push_str("quit_fast=");
         prev.push_str(&self.quit_fast.to_string());
-        prev.push_str("\n");
+        prev.push('\n');
 
         ItemPreview::Text(prev)
     }
@@ -112,12 +109,11 @@ pub fn load_runners() -> Vec<Runner> {
     if !default_path.exists() {
         generate_default_config(&default_path);
     }
-    let default_configs: Option<Config>;
     let default_confstring = read_to_string(default_path).unwrap();
-    match toml::from_str::<Config>(&default_confstring) {
-        Ok(conf) => default_configs = Some(conf),
+    let default_configs = match toml::from_str::<Config>(&default_confstring) {
+        Ok(conf) => Some(conf),
         Err(e) => panic!("Could not parse default config: {}", e),
-    }
+    };
 
     // load user config
     let userconf_path = confdir.join("runfast/runners.toml");
@@ -133,7 +129,7 @@ pub fn load_runners() -> Vec<Runner> {
     let mut runners = get_runners_from_config(&user_configs);
     let mut default_runners = get_runners_from_config(&default_configs);
 
-    while default_runners.len() > 0 {
+    while !default_runners.is_empty() {
         let dr = default_runners.pop().unwrap();
         let mut already_exists = false;
         for r in &runners {
@@ -173,9 +169,8 @@ fn generate_default_config(default_path: &Path) {
     let default_conf = File::create(default_path);
     match default_conf {
         Ok(mut conf_file) => {
-            conf_file.write(include_bytes!("defaults.toml"))
+            conf_file.write_all(include_bytes!("defaults.toml"))
                 .expect("couldn't write default conf file");
-            ()
         },
         Err(e) => {
             println!("Could not create file at: {}, error: {:#?}",
