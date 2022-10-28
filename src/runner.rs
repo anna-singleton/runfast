@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::fs::File;
 use std::fs::read_to_string;
 use std::io::Write;
@@ -10,14 +9,21 @@ use serde::{Serialize, Deserialize};
 
 use skim::*;
 
+/// Holds all state required by a runner to execute a command
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Runner {
+    /// The name to call the runner in the TUI, for searching / selecting
     pub name: String,
+
+    /// The command to execute at run-time
     pub cmd: String,
+
+    /// False if runfast should prompt for an extra ENTER press before exiting.
     pub quit_fast: bool,
 }
 
 impl Runner {
+    /// Returns a `Runner`, filling in any blanks with defaults.
     fn new_from_config(conf: &RunnerConfig) -> Runner {
         Runner {
             name: match &conf.name {
@@ -28,13 +34,11 @@ impl Runner {
                 Some(c) => c.clone(),
                 None => "echo 'command not set'".to_string(),
             },
-            quit_fast: match conf.quit_fast {
-                Some(q) => q,
-                None => false,
-            }
+            quit_fast: conf.quit_fast.unwrap_or(false)
         }
     }
 
+    /// Uses this runner to execute the run command
     pub fn run(&self) {
         let mut c = Command::new("bash");
         c.arg("-c");
@@ -61,36 +65,34 @@ impl SkimItem for Runner {
 
         prev.push_str("name=");
         prev.push_str(self.name.as_str());
-        prev.push_str("\n");
+        prev.push('\n');
 
         prev.push_str("cmd=");
         prev.push_str(self.cmd.as_str());
-        prev.push_str("\n");
+        prev.push('\n');
 
         prev.push_str("quit_fast=");
         prev.push_str(&self.quit_fast.to_string());
-        prev.push_str("\n");
+        prev.push('\n');
 
         ItemPreview::Text(prev)
     }
 }
 
 
+/// Defines config structure for reading
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct Config {
     runners: Option<Vec<RunnerConfig>>,
 }
 
-// Struct to use for parsing toml, since each runner in the toml may not have
-// a complete config defined, but we can construct one out of RUNNER_DEFAULTS
-// and the defaults in both config files
+/// Struct to use for parsing toml, since each runner in the toml may not have
+/// a complete config defined, but we can construct one out of RUNNER_DEFAULTS
+/// and the defaults in both config files
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct RunnerConfig {
     name: Option<String>,
     cmd: Option<String>,
-    vars: Option<HashMap<String, String>>,
     quit_fast: Option<bool>,
 }
 
@@ -107,12 +109,11 @@ pub fn load_runners() -> Vec<Runner> {
     if !default_path.exists() {
         generate_default_config(&default_path);
     }
-    let default_configs: Option<Config>;
     let default_confstring = read_to_string(default_path).unwrap();
-    match toml::from_str::<Config>(&default_confstring) {
-        Ok(conf) => default_configs = Some(conf),
+    let default_configs = match toml::from_str::<Config>(&default_confstring) {
+        Ok(conf) => Some(conf),
         Err(e) => panic!("Could not parse default config: {}", e),
-    }
+    };
 
     // load user config
     let userconf_path = confdir.join("runfast/runners.toml");
@@ -128,7 +129,7 @@ pub fn load_runners() -> Vec<Runner> {
     let mut runners = get_runners_from_config(&user_configs);
     let mut default_runners = get_runners_from_config(&default_configs);
 
-    while default_runners.len() > 0 {
+    while !default_runners.is_empty() {
         let dr = default_runners.pop().unwrap();
         let mut already_exists = false;
         for r in &runners {
@@ -168,16 +169,8 @@ fn generate_default_config(default_path: &Path) {
     let default_conf = File::create(default_path);
     match default_conf {
         Ok(mut conf_file) => {
-            conf_file.write(
-            b"[defaults]\n\
-            name=\"default name\"\n\
-            cmd=\"echo no command set\"\n\
-            quit_fast=false\n\n\
-            [[runners]]\n\
-            name=\"rust run\"\n\
-            cmd=\"cargo run\"\n\
-            quit_fast=false").unwrap();
-            ()
+            conf_file.write_all(include_bytes!("defaults.toml"))
+                .expect("couldn't write default conf file");
         },
         Err(e) => {
             println!("Could not create file at: {}, error: {:#?}",
