@@ -1,19 +1,18 @@
 extern crate skim;
-use directories::BaseDirs;
 use skim::prelude::*;
+
+use directories::BaseDirs;
+
 use std::path::PathBuf;
 use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 use clap::Parser;
 
 mod runner;
 use runner::Runner;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct RunnerCache {
-    runners: HashMap<PathBuf, Runner>,
-}
-
+/// clap struct for parsing cli args
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about=None)]
 struct Cli {
@@ -22,7 +21,17 @@ struct Cli {
     force_choose_new: bool,
 }
 
+
+/// struct for serialising / deserialising the runner cache, allowing for runfast
+/// to remember the last used runner in a directory
+#[derive(Serialize, Deserialize, Debug)]
+struct RunnerCache {
+    runners: HashMap<PathBuf, Runner>,
+}
+
 impl RunnerCache {
+    /// Returns the cache if its a valid cache, and the executing user has
+    /// access to the cache
     fn load() -> Option<RunnerCache> {
         let cache_path = BaseDirs::new()
             .unwrap()
@@ -48,6 +57,8 @@ impl RunnerCache {
         }
     }
 
+    /// Returns a Some(Runner) if the path exists in the cache, or None if it
+    /// does not
     fn try_get_runner(&self) -> Option<Runner> {
         match self.runners.get(&std::env::current_dir().unwrap()) {
             Some(rnr) => Some(rnr.to_owned()),
@@ -55,6 +66,15 @@ impl RunnerCache {
         }
     }
 
+    /// Adds a runner to the cache, serialises it, then writes it to disk.
+    ///
+    /// In the case the current filepath is already in the cache, overwrite it
+    /// with the new value of the runner
+    ///
+    /// # Arguments:
+    ///
+    /// * `runner` - A borrowed runner to be added to the cache.
+    ///
     fn add_runner(&mut self, runner: &Runner) {
         let current_path = std::env::current_dir().unwrap();
         if self.runners.contains_key(&current_path) {
@@ -127,6 +147,9 @@ pub fn main() {
 
 }
 
+/// Returns a Some(Runner) if the user selects one.
+///
+/// Uses `skim` to generate the TUI !this will change in future!
 fn select_new_runner() -> Option<Runner> {
     let runners = runner::load_runners();
 

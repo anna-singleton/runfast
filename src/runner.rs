@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::fs::File;
 use std::fs::read_to_string;
 use std::io::Write;
@@ -10,14 +9,21 @@ use serde::{Serialize, Deserialize};
 
 use skim::*;
 
+/// Holds all state required by a runner to execute a command
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Runner {
+    /// The name to call the runner in the TUI, for searching / selecting
     pub name: String,
+
+    /// The command to execute at run-time
     pub cmd: String,
+
+    /// False if runfast should prompt for an extra ENTER press before exiting.
     pub quit_fast: bool,
 }
 
 impl Runner {
+    /// Returns a `Runner`, filling in any blanks with defaults.
     fn new_from_config(conf: &RunnerConfig) -> Runner {
         Runner {
             name: match &conf.name {
@@ -35,6 +41,7 @@ impl Runner {
         }
     }
 
+    /// Uses this runner to execute the run command
     pub fn run(&self) {
         let mut c = Command::new("bash");
         c.arg("-c");
@@ -76,21 +83,19 @@ impl SkimItem for Runner {
 }
 
 
+/// Defines config structure for reading
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct Config {
     runners: Option<Vec<RunnerConfig>>,
 }
 
-// Struct to use for parsing toml, since each runner in the toml may not have
-// a complete config defined, but we can construct one out of RUNNER_DEFAULTS
-// and the defaults in both config files
+/// Struct to use for parsing toml, since each runner in the toml may not have
+/// a complete config defined, but we can construct one out of RUNNER_DEFAULTS
+/// and the defaults in both config files
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] //required by toml parser, not picked up as non-dead code
 struct RunnerConfig {
     name: Option<String>,
     cmd: Option<String>,
-    vars: Option<HashMap<String, String>>,
     quit_fast: Option<bool>,
 }
 
@@ -168,15 +173,8 @@ fn generate_default_config(default_path: &Path) {
     let default_conf = File::create(default_path);
     match default_conf {
         Ok(mut conf_file) => {
-            conf_file.write(
-            b"[defaults]\n\
-            name=\"default name\"\n\
-            cmd=\"echo no command set\"\n\
-            quit_fast=false\n\n\
-            [[runners]]\n\
-            name=\"rust run\"\n\
-            cmd=\"cargo run\"\n\
-            quit_fast=false").unwrap();
+            conf_file.write(include_bytes!("defaults.toml"))
+                .expect("couldn't write default conf file");
             ()
         },
         Err(e) => {
