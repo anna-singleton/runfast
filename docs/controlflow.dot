@@ -1,0 +1,24 @@
+digraph {
+    node[shape=box]
+    start -> load
+
+    load[label="load cache"]
+
+    load -> d1
+
+    d1[label="force reset runner?", shape=diamond]
+    d1 -> choose [label=yes]
+    d1 -> d2 [label=no]
+
+    d2[label="is dir in the cache?", shape=diamond]
+    d2 -> use_runner[label="yes"]
+    d2 -> choose[label="no"]
+
+    choose[label="choose runner & select it"]
+    choose -> cache_selected
+
+    cache_selected[label="write selected runner to cache"]
+    cache_selected -> use_runner
+
+    use_runner[label="use runner"]
+}

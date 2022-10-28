@@ -84,25 +84,41 @@ impl RunnerCache {
 
 pub fn main() {
     let cli = Cli::parse();
-    println!("{:#?}", cli);
 
     let mut cache = RunnerCache::load();
 
-    let chosen_runner = match cache {
-        Some(ref mut c) => match c.try_get_runner() {
-            Some(rnr) => Some(rnr),
-            None => {
-                let rnr = select_new_runner();
-                if rnr.is_some() {
-                    c.add_runner(&rnr.as_ref().unwrap());
-                }
-                rnr
-            },
-        },
-        None => select_new_runner(),
-    };
+    let chosen;
 
-    match chosen_runner {
+    // TODO: this is disgusting there must be a better way
+    if cli.force_choose_new {
+        chosen = select_new_runner();
+        if chosen.is_some() {
+            if cache.is_some() {
+                cache.as_mut().unwrap().add_runner(&chosen.as_ref().unwrap());
+            }
+            else {
+                println!("Could not parse cache, intentionally not overwriting\
+                    , check it for errors.")
+            }
+        }
+    } else {
+        chosen = match cache {
+            Some(ref mut c) => match c.try_get_runner() {
+                Some(rnr) => Some(rnr), // runner found in the cache
+                None => { // runner not found in the cache
+                    let rnr = select_new_runner();
+                    if rnr.is_some() {
+                        c.add_runner(&rnr.as_ref().unwrap());
+                    }
+                    rnr
+                },
+            },
+            None => select_new_runner(),
+        };
+    }
+
+
+    match chosen {
         Some(cr) => cr.run(),
         None => println!("No Runner Selected"),
     };
@@ -148,7 +164,6 @@ fn select_new_runner() -> Option<Runner> {
     }
 
     let key = result.selected_items[0].output();
-    println!("Selected: {}", key);
 
     let mut chosen_runner = None;
     for r in runners {
