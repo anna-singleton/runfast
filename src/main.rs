@@ -4,6 +4,7 @@ use skim::prelude::*;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use clap::Parser;
 
 mod runner;
 use runner::Runner;
@@ -11,6 +12,14 @@ use runner::Runner;
 #[derive(Serialize, Deserialize, Debug)]
 struct RunnerCache {
     runners: HashMap<PathBuf, Runner>,
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about=None)]
+struct Cli {
+    #[arg(short, long="force-choose", help="Force runfast to choose a new runner, instead of \
+        looking for one that may already be set")]
+    force_choose_new: bool,
 }
 
 impl RunnerCache {
@@ -74,6 +83,9 @@ impl RunnerCache {
 }
 
 pub fn main() {
+    let cli = Cli::parse();
+    println!("{:#?}", cli);
+
     let mut cache = RunnerCache::load();
 
     let chosen_runner = match cache {
