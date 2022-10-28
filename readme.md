@@ -18,8 +18,14 @@ allows me to think less, do more.
 
 ## How do I use it?
 
-Personally, I use it with a tmux bind, since I am almost always in a tmux
-session. See the `.tmux.config` in my
-[dotfiles repo](https://github.com/anna-singleton/dotfiles) for an example.
-You may see it referred to as `quickrun` in a few places, since that what it was
-intially called.
+add the binary to your path, and call `runfast` in your project directory.
+It will automatically create a default config at
+`~/.config/runfast/defaults.toml`. You can add your own runners in a similar
+manner in `~/.config/runfast/runners.toml`. When running in a new directory,
+runfast will get you to choose a runner, and cache what you choose. This means
+you dont have to select the same one each time. However, you can also call
+`runfast -f` to force runfast to re-choose and re-cache the runner for a
+directory.
+
+Additionally, I have mine firing off a `tmux` bind, see my dotfiles repo, also
+hosted on github, for an example.
