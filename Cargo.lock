@@ -775,7 +775,6 @@ dependencies = [
  "clap 4.0.18",
  "directories",
  "serde",
- "serde_derive",
  "skim",
  "toml",
 ]

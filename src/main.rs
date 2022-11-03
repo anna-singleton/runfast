@@ -82,50 +82,6 @@ impl RunnerCache {
     }
 }
 
-pub fn main() {
-    let cli = Cli::parse();
-
-    let mut cache = RunnerCache::load();
-
-    let chosen;
-
-    // TODO: this is disgusting there must be a better way
-    if cli.force_choose_new {
-        chosen = select_new_runner();
-        if chosen.is_some() {
-            if cache.is_some() {
-                cache.as_mut().unwrap().add_runner(&chosen.as_ref().unwrap());
-            }
-            else {
-                println!("Could not parse cache, intentionally not overwriting\
-                    , check it for errors.")
-            }
-        }
-    } else {
-        chosen = match cache {
-            Some(ref mut c) => match c.try_get_runner() {
-                Some(rnr) => Some(rnr), // runner found in the cache
-                None => { // runner not found in the cache
-                    let rnr = select_new_runner();
-                    if rnr.is_some() {
-                        c.add_runner(&rnr.as_ref().unwrap());
-                    }
-                    rnr
-                },
-            },
-            None => select_new_runner(),
-        };
-    }
-
-
-    match chosen {
-        Some(cr) => cr.run(),
-        None => println!("No Runner Selected"),
-    };
-
-    println!("bye!");
-
-}
 
 fn select_new_runner() -> Option<Runner> {
     let runners = runner::load_runners();
@@ -144,7 +100,6 @@ fn select_new_runner() -> Option<Runner> {
 
     drop(tx);
 
-
     let r = Skim::run_with(&options, Some(rx));
 
     if r.is_none() {
@@ -154,13 +109,12 @@ fn select_new_runner() -> Option<Runner> {
 
     let result = r.unwrap();
 
-    if result.final_event == Event::EvActAbort {
-        println!("Nothing Selected...");
+    if result.final_event == Event::EvActAbort || result.selected_items.len() == 0 {
         return None
     }
 
-    if result.selected_items.len() != 1 {
-        unreachable!()
+    if result.selected_items.len() > 1 {
+        unreachable!("Unable to process multiple items.");
     }
 
     let key = result.selected_items[0].output();
@@ -173,4 +127,45 @@ fn select_new_runner() -> Option<Runner> {
     }
 
     chosen_runner
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    let mut cache = RunnerCache::load();
+
+    let chosen = if cli.force_choose_new {
+        let runner = select_new_runner();
+        match cache {
+            Some(mut cache) => {
+                if runner.is_some() {
+                    cache.add_runner(&runner.as_ref().unwrap());
+                }
+            },
+            None => {
+                eprintln!("Couldn't parse cache, intentionally not overwriting, check it for errors.");
+                std::process::exit(1);
+            }
+        }
+        runner
+    } else {
+        match cache {
+            Some(ref mut cache) => match cache.try_get_runner() {
+                Some(runner) => Some(runner), // runner found in the cache
+                None => { // runner not found in the cache
+                    let runner = select_new_runner();
+                    if runner.is_some() {
+                        cache.add_runner(&runner.as_ref().unwrap());
+                    }
+                    runner
+                },
+            },
+            None => select_new_runner(),
+        }
+    };
+
+    match chosen {
+        Some(cr) => cr.run(),
+        None => println!("No Runner Selected"),
+    };
 }
