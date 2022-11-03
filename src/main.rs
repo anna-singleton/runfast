@@ -1,25 +1,20 @@
 extern crate skim;
+use clap::Parser;
 use directories::BaseDirs;
 use skim::prelude::*;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use clap::Parser;
 
+mod cli;
 mod runner;
+
+use cli::Cli;
 use runner::Runner;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RunnerCache {
     runners: HashMap<PathBuf, Runner>,
-}
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about=None)]
-struct Cli {
-    #[arg(short, long="force-choose", help="Force runfast to choose a new runner, instead of \
-        looking for one that may already be set")]
-    force_choose_new: bool,
 }
 
 impl RunnerCache {
@@ -82,9 +77,10 @@ impl RunnerCache {
     }
 }
 
-
-fn select_new_runner() -> Option<Runner> {
-    let runners = runner::load_runners();
+fn select_new_runner(
+    path: String,
+) -> Option<Runner> {
+    let runners = runner::load_runners(&path);
 
     let options = SkimOptionsBuilder::default()
         .preview(Some(""))
@@ -135,7 +131,7 @@ fn main() {
     let mut cache = RunnerCache::load();
 
     let chosen = if cli.force_choose_new {
-        let runner = select_new_runner();
+        let runner = select_new_runner(cli.config_path);
         match cache {
             Some(mut cache) => {
                 if runner.is_some() {
@@ -153,14 +149,14 @@ fn main() {
             Some(ref mut cache) => match cache.try_get_runner() {
                 Some(runner) => Some(runner), // runner found in the cache
                 None => { // runner not found in the cache
-                    let runner = select_new_runner();
+                    let runner = select_new_runner(cli.config_path);
                     if runner.is_some() {
                         cache.add_runner(&runner.as_ref().unwrap());
                     }
                     runner
                 },
             },
-            None => select_new_runner(),
+            None => select_new_runner(cli.config_path),
         }
     };
 

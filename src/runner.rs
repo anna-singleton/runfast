@@ -21,11 +21,11 @@ impl Runner {
     fn new_from_config(conf: &RunnerConfig) -> Runner {
         Runner {
             name: match &conf.name {
-                Some(n) => n.clone(),
+                Some(n) => n.to_owned(),
                 None => "Default Runner Name".to_string(),
             },
             cmd: match &conf.cmd {
-                Some(c) => c.clone(),
+                Some(c) => c.to_owned(),
                 None => "echo 'command not set'".to_string(),
             },
             quit_fast: match conf.quit_fast {
@@ -94,7 +94,9 @@ struct RunnerConfig {
     quit_fast: Option<bool>,
 }
 
-pub fn load_runners() -> Vec<Runner> {
+pub fn load_runners(
+    path: &str,
+) -> Vec<Runner> {
     // try to load ~/.config/runfast/defaults.toml and ~/.config/runfast/runners.toml
     // prefer values in runners.toml if there are clashes
     let base_dirs = BaseDirs::new().unwrap();
@@ -115,7 +117,7 @@ pub fn load_runners() -> Vec<Runner> {
     }
 
     // load user config
-    let userconf_path = confdir.join("runfast/runners.toml");
+    let userconf_path = Path::new(path).to_path_buf();
     let mut user_configs: Option<Config> = None;
     if userconf_path.exists() {
         let user_confstring = read_to_string(userconf_path).unwrap();
@@ -176,11 +178,11 @@ fn generate_default_config(default_path: &Path) {
             [[runners]]\n\
             name=\"rust run\"\n\
             cmd=\"cargo run\"\n\
-            quit_fast=false").unwrap();
+            quit_fast=false\n").unwrap();
             ()
         },
         Err(e) => {
-            println!("Could not create file at: {}, error: {:#?}",
+            eprintln!("Could not create file at: {}, error: {:#?}",
                 default_path.display(), e);
             panic!("No default config could be created, panicing");
         },
