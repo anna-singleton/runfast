@@ -56,22 +56,17 @@ impl SkimItem for Runner {
     }
 
     fn preview(&self, _context: PreviewContext) -> ItemPreview {
-        let mut prev = String::new();
-        prev.push_str("[PARAMS]\n");
+        let preview = format!("[PARAMS]\n\
+        name={name}\n\
+        cmd={cmd}\n\
+        quit_fast={quit_fast}\n\
+        ",
+         name = self.name,
+         cmd = self.cmd,
+         quit_fast = self.quit_fast
+        );
 
-        prev.push_str("name=");
-        prev.push_str(self.name.as_str());
-        prev.push_str("\n");
-
-        prev.push_str("cmd=");
-        prev.push_str(self.cmd.as_str());
-        prev.push_str("\n");
-
-        prev.push_str("quit_fast=");
-        prev.push_str(&self.quit_fast.to_string());
-        prev.push_str("\n");
-
-        ItemPreview::Text(prev)
+        ItemPreview::Text(preview)
     }
 }
 
