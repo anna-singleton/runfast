@@ -12,3 +12,8 @@ quit_fast=false
 name="echo var showcase"
 cmd="echo {myvar}"
 quit_fast=false
+
+[[runners]]
+name="unique"
+cmd="{command}"
+quit_fast=false
