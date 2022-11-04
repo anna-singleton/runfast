@@ -112,10 +112,18 @@ pub fn load_runners(
         Err(e) => panic!("Could not parse default config: {}", e),
     };
 
+
     // load user config
-    let userconf_path = Path::new(path).to_path_buf();
+    let userconf_path = if path == "" {
+        confdir.join("runfast/runners.toml")
+    }
+    else {
+        Path::new(path).to_path_buf()
+    };
+    println!("path: {:?}", userconf_path);
     let mut user_configs: Option<Config> = None;
     if userconf_path.exists() {
+        println!("userconf exists!");
         let user_confstring = read_to_string(userconf_path).unwrap();
         match toml::from_str::<Config>(&user_confstring) {
             Ok(conf) => user_configs = Some(conf),
