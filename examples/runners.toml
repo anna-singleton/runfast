@@ -7,3 +7,8 @@ quit_fast=false
 name="rust run"
 cmd="cargo run"
 quit_fast=false
+
+[[runners]]
+name="echo var showcase"
+cmd="echo {myvar}"
+quit_fast=false

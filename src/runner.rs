@@ -5,9 +5,12 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use directories::BaseDirs;
+use regex::Regex;
 use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
 
 use skim::*;
+use new_string_template::template::Template;
 
 /// Holds all state required by a runner to execute a command
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,7 +55,50 @@ impl Runner {
             let _ = Command::new("bash").arg("-c").arg("read").status();
         }
     }
+
+    pub fn get_args(&mut self) {
+        let rexp = Regex::new(r"\{([^}]*)\}").unwrap();
+        let handlebar_matches = rexp.find_iter(&self.cmd);
+
+        let mut var_keys: Vec<String> = Vec::new();
+
+        for m in handlebar_matches {
+            var_keys.push(m.as_str().to_string());
+        }
+
+        if var_keys.is_empty() {
+            return
+        }
+
+        let mut argmap: HashMap<String, String> = HashMap::new();
+
+        for key in var_keys {
+            let mut newkey = key.to_owned();
+            newkey.replace_range(0..1, "");
+            newkey.replace_range((newkey.len() - 1)..newkey.len(), "");
+            newkey = newkey.trim().to_string();
+            argmap.insert(newkey, Self::get_arg(&key).trim().to_string());
+        }
+
+        let t = Template::new(&self.cmd);
+
+        self.cmd = match t.render_string(&argmap) {
+            Ok(s) => s,
+            Err(e) => panic!("Internal var substitution error: {}", e),
+        }
+    }
+
+    fn get_arg(name: &String) -> String {
+        println!("Enter value for {}", name);
+
+        let mut arg = String::new();
+
+        std::io::stdin().read_line(&mut arg).expect("error reading from stdin");
+
+        arg
+    }
 }
+
 
 impl SkimItem for Runner {
     fn text(&self) -> prelude::Cow<str> {

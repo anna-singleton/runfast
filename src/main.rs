@@ -126,8 +126,9 @@ fn select_new_runner(runners_path: String) -> Option<Runner> {
     let key = result.selected_items[0].output();
 
     let mut chosen_runner = None;
-    for r in runners {
+    for mut r in runners {
         if r.name == key {
+            r.get_args();
             chosen_runner = Some(r);
         }
     }
