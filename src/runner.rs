@@ -27,11 +27,11 @@ impl Runner {
     fn new_from_config(conf: &RunnerConfig) -> Runner {
         Runner {
             name: match &conf.name {
-                Some(n) => n.clone(),
+                Some(n) => n.to_owned(),
                 None => "Default Runner Name".to_string(),
             },
             cmd: match &conf.cmd {
-                Some(c) => c.clone(),
+                Some(c) => c.to_owned(),
                 None => "echo 'command not set'".to_string(),
             },
             quit_fast: conf.quit_fast.unwrap_or(false)
@@ -60,22 +60,17 @@ impl SkimItem for Runner {
     }
 
     fn preview(&self, _context: PreviewContext) -> ItemPreview {
-        let mut prev = String::new();
-        prev.push_str("[PARAMS]\n");
+        let preview = format!("[PARAMS]\n\
+        name={name}\n\
+        cmd={cmd}\n\
+        quit_fast={quit_fast}\n\
+        ",
+         name = self.name,
+         cmd = self.cmd,
+         quit_fast = self.quit_fast
+        );
 
-        prev.push_str("name=");
-        prev.push_str(self.name.as_str());
-        prev.push('\n');
-
-        prev.push_str("cmd=");
-        prev.push_str(self.cmd.as_str());
-        prev.push('\n');
-
-        prev.push_str("quit_fast=");
-        prev.push_str(&self.quit_fast.to_string());
-        prev.push('\n');
-
-        ItemPreview::Text(prev)
+        ItemPreview::Text(preview)
     }
 }
 
@@ -96,7 +91,9 @@ struct RunnerConfig {
     quit_fast: Option<bool>,
 }
 
-pub fn load_runners() -> Vec<Runner> {
+pub fn load_runners(
+    path: &str,
+) -> Vec<Runner> {
     // try to load ~/.config/runfast/defaults.toml and ~/.config/runfast/runners.toml
     // prefer values in runners.toml if there are clashes
     let base_dirs = BaseDirs::new().unwrap();
@@ -116,7 +113,7 @@ pub fn load_runners() -> Vec<Runner> {
     };
 
     // load user config
-    let userconf_path = confdir.join("runfast/runners.toml");
+    let userconf_path = Path::new(path).to_path_buf();
     let mut user_configs: Option<Config> = None;
     if userconf_path.exists() {
         let user_confstring = read_to_string(userconf_path).unwrap();
@@ -173,7 +170,7 @@ fn generate_default_config(default_path: &Path) {
                 .expect("couldn't write default conf file");
         },
         Err(e) => {
-            println!("Could not create file at: {}, error: {:#?}",
+            eprintln!("Could not create file at: {}, error: {:#?}",
                 default_path.display(), e);
             panic!("No default config could be created, panicing");
         },

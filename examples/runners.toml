@@ -1,0 +1,9 @@
+[defaults]
+name="default name"
+cmd="echo no command set"
+quit_fast=false
+
+[[runners]]
+name="rust run"
+cmd="cargo run"
+quit_fast=false
