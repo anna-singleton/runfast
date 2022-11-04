@@ -137,9 +137,7 @@ struct RunnerConfig {
     quit_fast: Option<bool>,
 }
 
-pub fn load_runners(
-    path: &str,
-) -> Vec<Runner> {
+pub fn load_runners(path: &Option<String>) -> Vec<Runner> {
     // try to load ~/.config/runfast/defaults.toml and ~/.config/runfast/runners.toml
     // prefer values in runners.toml if there are clashes
     let base_dirs = BaseDirs::new().unwrap();
@@ -160,12 +158,18 @@ pub fn load_runners(
 
 
     // load user config
-    let userconf_path = if path == "" {
-        confdir.join("runfast/runners.toml")
-    }
-    else {
-        Path::new(path).to_path_buf()
+    // let userconf_path = if path == "" {
+    //     confdir.join("runfast/runners.toml")
+    // }
+    // else {
+    //     Path::new(path).to_path_buf()
+    // };
+
+    let userconf_path = match path {
+        Some(path) => Path::new(&path).to_path_buf(),
+        None => confdir.join("runfast/runners.toml"),
     };
+
     println!("path: {:?}", userconf_path);
     let mut user_configs: Option<Config> = None;
     if userconf_path.exists() {

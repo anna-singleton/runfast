@@ -89,7 +89,7 @@ impl RunnerCache {
     }
 }
 
-fn select_new_runner(runners_path: String) -> Option<Runner> {
+fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     let runners = runner::load_runners(&runners_path);
 
     let options = SkimOptionsBuilder::default()
@@ -122,7 +122,7 @@ fn select_new_runner(runners_path: String) -> Option<Runner> {
     if result.selected_items.len() > 1 {
         unreachable!("Unable to process multiple items.");
     }
-                                                                                        
+
     let key = result.selected_items[0].output();
 
     let mut chosen_runner = None;
