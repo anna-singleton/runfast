@@ -5,9 +5,11 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use directories::BaseDirs;
+use regex::Regex;
 use serde::{Serialize, Deserialize};
 
 use skim::*;
+use string_template::Template;
 
 /// Holds all state required by a runner to execute a command
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +53,45 @@ impl Runner {
             println!("Press ENTER to exit...");
             let _ = Command::new("bash").arg("-c").arg("read").status();
         }
+    }
+
+    pub fn get_args(&mut self) {
+        println!("Matching against: {}", self.cmd);
+
+        let rexp = Regex::new(r"\{\{([^}]*)\}\}").unwrap();
+        let handlebar_matches = rexp.find_iter(&self.cmd);
+
+        let mut var_keys: Vec<String> = Vec::new();
+
+        for m in handlebar_matches {
+            println!("found match: {}", m.as_str());
+            var_keys.push(m.as_str().to_string());
+        }
+
+        if var_keys.is_empty() {
+            return
+        }
+
+        let mut argmap: HashMap<String, String> = HashMap::new();
+
+        for key in var_keys {
+            argmap.insert(key.clone(), Self::get_arg(&key));
+        }
+
+        let t = Template::new(&self.name);
+
+        t.render(&argmap);
+
+    }
+
+    fn get_arg(name: &String) -> String {
+        println!("Enter value for {}", name);
+
+        let mut arg = String::new();
+
+        std::io::stdin().read_line(&mut arg).expect("error reading from stdin");
+
+        arg
     }
 }
 

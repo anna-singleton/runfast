@@ -791,8 +791,10 @@ dependencies = [
  "clap 4.0.18",
  "clap_mangen",
  "directories",
+ "regex",
  "serde",
  "skim",
+ "string_template",
  "toml",
 ]
 
@@ -982,6 +984,15 @@ name = "stdweb-internal-runtime"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
+
+[[package]]
+name = "string_template"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc6f2c6b2c3fa950895c9aeb0c3cb9271d7eb580662af9af2b711b593f446320"
+dependencies = [
+ "regex",
+]
 
 [[package]]
 name = "strsim"
