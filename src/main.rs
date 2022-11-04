@@ -117,7 +117,7 @@ fn select_new_runner(
 
     let result = r.unwrap();
 
-    if result.final_event == Event::EvActAbort || result.selected_items.len() == 0 {
+    if result.final_event == Event::EvActAbort || result.selected_items.is_empty() {
         return None
     }
 
@@ -146,13 +146,12 @@ fn main() {
         let runner = select_new_runner(cli.config_path);
         match cache {
             Some(mut cache) => {
-                if runner.is_some() {
-                    cache.add_runner(&runner.as_ref().unwrap());
+                if let Some(ref runner) = runner {
+                    cache.add_runner(runner);
                 }
             },
             None => {
                 eprintln!("Couldn't parse cache, intentionally not overwriting, check it for errors.");
-                std::process::exit(1);
             }
         }
         runner
@@ -162,8 +161,8 @@ fn main() {
                 Some(runner) => Some(runner), // runner found in the cache
                 None => { // runner not found in the cache
                     let runner = select_new_runner(cli.config_path);
-                    if runner.is_some() {
-                        cache.add_runner(&runner.as_ref().unwrap());
+                    if let Some(ref runner) = runner {
+                        cache.add_runner(runner);
                     }
                     runner
                 },
