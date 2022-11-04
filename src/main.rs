@@ -1,13 +1,10 @@
 extern crate skim;
-use clap::Parser;
-use directories::BaseDirs;
-use skim::prelude::*;
-
-use directories::BaseDirs;
-
 use std::path::PathBuf;
 use std::collections::HashMap;
 
+use clap::Parser;
+use directories::BaseDirs;
+use skim::prelude::*;
 use serde::{Serialize, Deserialize};
 
 mod cli;
@@ -63,7 +60,7 @@ impl RunnerCache {
     ///
     /// # Arguments:
     ///
-    /// * `runner` - A borrowed runner to be added to the cache.
+    /// * [runner](Runner) - A borrowed runner to be added to the cache.
     ///
     fn add_runner(&mut self, runner: &Runner) {
         let current_path = std::env::current_dir().unwrap();
@@ -75,7 +72,7 @@ impl RunnerCache {
         let new_cache = match toml::to_string(&self) {
             Ok(nc) => nc,
             Err(e) => {
-                println!("Could not serialise new cache data to toml, error: {}", e);
+                eprintln!("Could not serialise new cache data to toml, error: {}", e);
                 return;
             },
         };
@@ -87,7 +84,7 @@ impl RunnerCache {
 
         match std::fs::write(cache_path, new_cache) {
             Ok(_) => (),
-            Err(e) => println!("Could not write toml to disk, error: {}", e),
+            Err(e) => eprintln!("Could not write toml to disk, error: {}", e),
         };
     }
 }
