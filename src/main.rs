@@ -2,8 +2,12 @@ extern crate skim;
 use clap::Parser;
 use directories::BaseDirs;
 use skim::prelude::*;
+
+use directories::BaseDirs;
+
 use std::path::PathBuf;
 use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 
 mod cli;
@@ -18,6 +22,8 @@ struct RunnerCache {
 }
 
 impl RunnerCache {
+    /// Returns the cache if its a valid cache, and the executing user has
+    /// access to the cache
     fn load() -> Option<RunnerCache> {
         let cache_path = BaseDirs::new()
             .unwrap()
@@ -30,7 +36,7 @@ impl RunnerCache {
 
         let cache_string = std::fs::read_to_string(cache_path).unwrap();
 
-        return match toml::from_str::<RunnerCache>(&cache_string) {
+        match toml::from_str::<RunnerCache>(&cache_string) {
             Ok(cache) => Some(cache),
             Err(e) => {
                 println!("Could Not Parse Cache with Error: {}\n\
@@ -43,13 +49,22 @@ impl RunnerCache {
         }
     }
 
+    /// Returns a Some(Runner) if the path exists in the cache, or None if it
+    /// does not
     fn try_get_runner(&self) -> Option<Runner> {
-        match self.runners.get(&std::env::current_dir().unwrap()) {
-            Some(rnr) => Some(rnr.to_owned()),
-            None => None,
-        }
+        let cdir = std::env::current_dir().unwrap();
+        self.runners.get(&cdir).map(|rnr| rnr.to_owned())
     }
 
+    /// Adds a runner to the cache, serialises it, then writes it to disk.
+    ///
+    /// In the case the current filepath is already in the cache, overwrite it
+    /// with the new value of the runner
+    ///
+    /// # Arguments:
+    ///
+    /// * `runner` - A borrowed runner to be added to the cache.
+    ///
     fn add_runner(&mut self, runner: &Runner) {
         let current_path = std::env::current_dir().unwrap();
         if self.runners.contains_key(&current_path) {
