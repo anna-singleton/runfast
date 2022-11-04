@@ -89,10 +89,8 @@ impl RunnerCache {
     }
 }
 
-fn select_new_runner(
-    path: String,
-) -> Option<Runner> {
-    let runners = runner::load_runners(&path);
+fn select_new_runner(runners_path: String) -> Option<Runner> {
+    let runners = runner::load_runners(&runners_path);
 
     let options = SkimOptionsBuilder::default()
         .preview(Some(""))
@@ -124,7 +122,7 @@ fn select_new_runner(
     if result.selected_items.len() > 1 {
         unreachable!("Unable to process multiple items.");
     }
-
+                                                                                        
     let key = result.selected_items[0].output();
 
     let mut chosen_runner = None;
@@ -143,7 +141,7 @@ fn main() {
     let mut cache = RunnerCache::load();
 
     let chosen = if cli.force_choose_new {
-        let runner = select_new_runner(cli.config_path);
+        let runner = select_new_runner(cli.runners_path);
         match cache {
             Some(mut cache) => {
                 if let Some(ref runner) = runner {
@@ -160,14 +158,14 @@ fn main() {
             Some(ref mut cache) => match cache.try_get_runner() {
                 Some(runner) => Some(runner), // runner found in the cache
                 None => { // runner not found in the cache
-                    let runner = select_new_runner(cli.config_path);
+                    let runner = select_new_runner(cli.runners_path);
                     if let Some(ref runner) = runner {
                         cache.add_runner(runner);
                     }
                     runner
                 },
             },
-            None => select_new_runner(cli.config_path),
+            None => select_new_runner(cli.runners_path),
         }
     };
 
