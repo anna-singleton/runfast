@@ -1,0 +1,14 @@
+[[runners]]
+name="rust"
+cmd="cargo run"
+quit_fast=false
+
+[[runners]]
+name="list"
+cmd="ls"
+quit_fast=false
+
+[[runners]]
+name = "unique"
+cmd = "{command}"
+quit_fast = false
