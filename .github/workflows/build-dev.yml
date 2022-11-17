@@ -1,0 +1,29 @@
+name: rust build & release (linux)
+
+on:
+  push:
+    branches: [ "dev" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: build executable
+      run: cargo build --verbose --release
+
+    - name: upload & add to releases
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "dev-latest"
+        prerelease: true
+        title: "Latest Linux Build (UNSTABLE)"
+        files: |
+          target/release/runfast
+
