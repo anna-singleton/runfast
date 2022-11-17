@@ -1,4 +1,4 @@
-name: rust build & release (linux)
+name: rust unstable build & release (linux)
 
 on:
   push:
