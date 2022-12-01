@@ -61,11 +61,16 @@ impl RunnerCache {
         }
         self.runners.insert(current_path, runner.clone());
 
+
+        self.write_cache();
+    }
+
+    fn write_cache(&self) -> Result<(),String> {
         let new_cache = match toml::to_string(&self) {
             Ok(nc) => nc,
             Err(e) => {
                 eprintln!("Could not serialise new cache data to toml, error: {}", e);
-                return;
+                e.to_string()
             },
         };
 
@@ -75,8 +80,26 @@ impl RunnerCache {
             .join("runfast-cache.toml");
 
         match std::fs::write(cache_path, new_cache) {
-            Ok(_) => (),
-            Err(e) => eprintln!("Could not write toml to disk, error: {}", e),
-        };
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Could not write toml to disk, error: {}", e);
+                Err(e.to_string())
+            },
+        }
+    }
+
+    pub fn clean_cache(&mut self) -> Result<u32, String> {
+        let before = self.runners.len();
+        self.runners.retain(|path, _| path.exists());
+        let after = self.runners.len();
+
+        self.write_cache()?;
+
+        Ok((before - after) as u32)
+    }
+
+    pub fn reset_cache() -> Result<(), String> {
+        let empty = RunnerCache{ runners: HashMap::new() };
+        empty.write_cache()
     }
 }

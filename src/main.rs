@@ -58,10 +58,37 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     chosen_runner
 }
 
+
 fn main() {
     let cli = Cli::parse();
 
     let mut cache = RunnerCache::load();
+
+    // there is probably a way to do this with Clap, might need to switch
+    // to builders
+    if cli.clean_cache && cli.reset_cache {
+        eprintln!("You cannot clean and reset the cache at the same time!");
+        return
+    }
+
+    if cli.clean_cache {
+        match cache {
+            Some(mut cache) => {
+                match cache.clean_cache() {
+                    Ok(x) => println!("Cache Cleaned, Removed {} Entries.", x),
+                    Err(e) => eprintln!("Couldn't clean cache, {}", e),
+                }
+            },
+            None => eprintln!("Cache is corrupted, cannot clean it."),
+        };
+        return;
+    } else if cli.reset_cache {
+        match RunnerCache::reset_cache() {
+            Ok(_) => println!("Cache emptied."),
+            Err(e) => eprintln!("Could not empty cache. Error: {}", e),
+        }
+        return;
+    }
 
     let chosen = if cli.force_choose_new {
         let runner = select_new_runner(cli.runners_path);
