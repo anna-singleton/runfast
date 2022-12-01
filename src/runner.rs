@@ -170,10 +170,8 @@ pub fn load_runners(path: &Option<String>) -> Vec<Runner> {
         None => confdir.join("runfast/runners.toml"),
     };
 
-    println!("path: {:?}", userconf_path);
     let mut user_configs: Option<Config> = None;
     if userconf_path.exists() {
-        println!("userconf exists!");
         let user_confstring = read_to_string(userconf_path).unwrap();
         match toml::from_str::<Config>(&user_confstring) {
             Ok(conf) => user_configs = Some(conf),

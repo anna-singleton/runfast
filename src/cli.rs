@@ -8,4 +8,8 @@ pub(crate) struct Cli {
     pub(crate) force_choose_new: bool,
     #[arg(short, long="runners-path", help="Load specific toml config")]
     pub(crate) runners_path: Option<String>,
+    #[arg(short='c', long="clean-cache", help="Remove cached directories that no longer exist")]
+    pub(crate) clean_cache: bool,
+    #[arg(long="reset-cache", help="Remove ALL directories in the cache")]
+    pub(crate) reset_cache: bool,
 }

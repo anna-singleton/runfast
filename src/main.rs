@@ -1,93 +1,15 @@
 extern crate skim;
-use std::path::PathBuf;
-use std::collections::HashMap;
 
 use clap::Parser;
-use directories::BaseDirs;
 use skim::prelude::*;
-use serde::{Serialize, Deserialize};
 
 mod cli;
 mod runner;
+mod runnercache;
 
 use cli::Cli;
 use runner::Runner;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct RunnerCache {
-    runners: HashMap<PathBuf, Runner>,
-}
-
-impl RunnerCache {
-    /// Returns the cache if its a valid cache, and the executing user has
-    /// access to the cache
-    fn load() -> Option<RunnerCache> {
-        let cache_path = BaseDirs::new()
-            .unwrap()
-            .cache_dir()
-            .join("runfast-cache.toml");
-
-        if !cache_path.exists() {
-            return Some(RunnerCache { runners: HashMap::new() })
-        }
-
-        let cache_string = std::fs::read_to_string(cache_path).unwrap();
-
-        match toml::from_str::<RunnerCache>(&cache_string) {
-            Ok(cache) => Some(cache),
-            Err(e) => {
-                println!("Could Not Parse Cache with Error: {}\n\
-                    Continuing without cache use.", e);
-                None
-                // return none to signify intentionally not generating a blank
-                // cache, otherwise we may overwrite an existing one that has
-                // parse errors
-            },
-        }
-    }
-
-    /// Returns a Some(Runner) if the path exists in the cache, or None if it
-    /// does not
-    fn try_get_runner(&self) -> Option<Runner> {
-        let cdir = std::env::current_dir().unwrap();
-        self.runners.get(&cdir).map(|rnr| rnr.to_owned())
-    }
-
-    /// Adds a runner to the cache, serialises it, then writes it to disk.
-    ///
-    /// In the case the current filepath is already in the cache, overwrite it
-    /// with the new value of the runner
-    ///
-    /// # Arguments:
-    ///
-    /// * [runner](Runner) - A borrowed runner to be added to the cache.
-    ///
-    fn add_runner(&mut self, runner: &Runner) {
-        let current_path = std::env::current_dir().unwrap();
-        if self.runners.contains_key(&current_path) {
-            self.runners.remove(&current_path);
-        }
-        self.runners.insert(current_path, runner.clone());
-
-        let new_cache = match toml::to_string(&self) {
-            Ok(nc) => nc,
-            Err(e) => {
-                eprintln!("Could not serialise new cache data to toml, error: {}", e);
-                return;
-            },
-        };
-
-        let cache_path = BaseDirs::new()
-            .unwrap()
-            .cache_dir()
-            .join("runfast-cache.toml");
-
-        match std::fs::write(cache_path, new_cache) {
-            Ok(_) => (),
-            Err(e) => eprintln!("Could not write toml to disk, error: {}", e),
-        };
-    }
-}
+use runnercache::RunnerCache;
 
 fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     let runners = runner::load_runners(&runners_path);
@@ -136,10 +58,37 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     chosen_runner
 }
 
+
 fn main() {
     let cli = Cli::parse();
 
     let mut cache = RunnerCache::load();
+
+    // there is probably a way to do this with Clap, might need to switch
+    // to builders
+    if cli.clean_cache && cli.reset_cache {
+        eprintln!("You cannot clean and reset the cache at the same time!");
+        return
+    }
+
+    if cli.clean_cache {
+        match cache {
+            Some(mut cache) => {
+                match cache.clean_cache() {
+                    Ok(x) => println!("Cache Cleaned, Removed {} Entries.", x),
+                    Err(e) => eprintln!("Couldn't clean cache, {}", e),
+                }
+            },
+            None => eprintln!("Cache is corrupted, cannot clean it."),
+        };
+        return;
+    } else if cli.reset_cache {
+        match RunnerCache::reset_cache() {
+            Ok(_) => println!("Cache emptied."),
+            Err(e) => eprintln!("Could not empty cache. Error: {}", e),
+        }
+        return;
+    }
 
     let chosen = if cli.force_choose_new {
         let runner = select_new_runner(cli.runners_path);
