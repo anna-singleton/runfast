@@ -31,6 +31,13 @@ Additionally, I have mine firing off a `tmux` bind, see my dotfiles repo, also
 hosted on github, for an example.
 
 
+## Can I see it working?
+
+Sure, here is an asciinema demo of it:
+
+[![asciicast](https://asciinema.org/a/542028.svg)](https://asciinema.org/a/542028)
+
+
 ## I want to contribute, how should I do that?
 
 firstly, thanks. secondly, please fork this repo, make your changes, and PR
