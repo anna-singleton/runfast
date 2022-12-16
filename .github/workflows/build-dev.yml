@@ -2,7 +2,7 @@ name: rust unstable build & release (linux)
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always

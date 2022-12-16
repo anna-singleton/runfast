@@ -41,7 +41,6 @@ Sure, here is an asciinema demo of it:
 ## I want to contribute, how should I do that?
 
 firstly, thanks. secondly, please fork this repo, make your changes, and PR
-the `dev` branch, not `main`. `main` is intended to be a 'stable' branch, that
-gets changes merged from `dev` when its ready. When the PR is made, request me
-as a reviewer, and I'll get around to it at some point. I cant give a timescale
-since I currently work full time, so it'll get done when it gets done.
+the `main` branch. When the PR is made, request me as a reviewer, and I'll get
+around to it at some point. I cant give a timescale since I currently work full
+time, so it'll get done when it gets done.
