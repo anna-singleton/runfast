@@ -63,7 +63,10 @@ impl Runner {
         let mut var_keys: Vec<String> = Vec::new();
 
         for m in handlebar_matches {
-            var_keys.push(m.as_str().to_string());
+            let new_var = m.as_str().to_string();
+            if ! var_keys.contains(&new_var) {
+                var_keys.push(new_var);
+            }
         }
 
         if var_keys.is_empty() {
@@ -72,6 +75,7 @@ impl Runner {
 
         let mut argmap: HashMap<String, String> = HashMap::new();
 
+        println!("command: {}", self.cmd);
         for key in var_keys {
             let mut newkey = key.to_owned();
             newkey.replace_range(0..1, "");
