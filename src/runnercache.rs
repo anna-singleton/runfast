@@ -62,7 +62,12 @@ impl RunnerCache {
         self.runners.insert(current_path, runner.clone());
 
 
-        self.write_cache();
+        let res = self.write_cache();
+
+        if res.is_err() {
+            eprintln!("could not write to the runner cache, with error: {}",
+                      res.unwrap_err());
+        }
     }
 
     fn write_cache(&self) -> Result<(),String> {
