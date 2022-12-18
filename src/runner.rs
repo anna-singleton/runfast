@@ -156,15 +156,6 @@ pub fn load_runners(path: &Option<String>) -> Vec<Runner> {
         Err(e) => panic!("Could not parse default config: {}", e),
     };
 
-
-    // load user config
-    // let userconf_path = if path == "" {
-    //     confdir.join("runfast/runners.toml")
-    // }
-    // else {
-    //     Path::new(path).to_path_buf()
-    // };
-
     let userconf_path = match path {
         Some(path) => Path::new(&path).to_path_buf(),
         None => confdir.join("runfast/runners.toml"),
