@@ -31,7 +31,7 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     let r = Skim::run_with(&options, Some(rx));
 
     if r.is_none() {
-        println!("internal runquick error :(");
+        println!("internal runfast error :(");
         return None
     }
 
