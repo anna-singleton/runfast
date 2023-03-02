@@ -7,10 +7,8 @@ use std::process::Command;
 use directories::BaseDirs;
 use regex::Regex;
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
 
 use skim::*;
-use new_string_template::template::Template;
 
 /// Holds all state required by a runner to execute a command
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,42 +55,26 @@ impl Runner {
     }
 
     pub fn get_args(&mut self) {
-        let rexp = Regex::new(r"\{([^}]*)\}").unwrap();
-        let handlebar_matches = rexp.find_iter(&self.cmd);
+        let re = Regex::new(r"\{(.*?)\}").unwrap();
+        let handlebar_matches = re.find_iter(&self.cmd);
 
-        let mut var_keys: Vec<String> = Vec::new();
+        let keys:Vec<_> = handlebar_matches.map(|m| m.as_str()).collect();
 
-        for m in handlebar_matches {
-            let new_var = m.as_str().to_string();
-            if ! var_keys.contains(&new_var) {
-                var_keys.push(new_var);
-            }
+        if keys.is_empty() {
+            return;
         }
 
-        if var_keys.is_empty() {
-            return
+        let mut newcmd = self.cmd.clone();
+        for key in keys {
+            let value = Self::get_arg(key);
+            newcmd = re.replace_all(&newcmd, value).to_string();
+            println!("Command is now: {}", newcmd);
         }
 
-        let mut argmap: HashMap<String, String> = HashMap::new();
-
-        println!("command: {}", self.cmd);
-        for key in var_keys {
-            let mut newkey = key.to_owned();
-            newkey.replace_range(0..1, "");
-            newkey.replace_range((newkey.len() - 1)..newkey.len(), "");
-            newkey = newkey.trim().to_string();
-            argmap.insert(newkey, Self::get_arg(&key).trim().to_string());
-        }
-
-        let t = Template::new(&self.cmd);
-
-        self.cmd = match t.render_string(&argmap) {
-            Ok(s) => s,
-            Err(e) => panic!("Internal var substitution error: {}", e),
-        }
+        self.cmd = newcmd;
     }
 
-    fn get_arg(name: &String) -> String {
+    fn get_arg(name: &str) -> String {
         println!("Enter value for {}", name);
 
         let mut arg = String::new();
