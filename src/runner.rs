@@ -39,7 +39,7 @@ impl Runner {
         }
     }
 
-    /// Uses this runner to execute the run command
+    /// Uses this runner to execute the its command
     pub fn run(&self) {
         let mut c = Command::new("bash");
         c.arg("-c");
@@ -54,8 +54,9 @@ impl Runner {
         }
     }
 
+    /// process choose time arguments, and do corresponding string replacements
     pub fn get_args(&mut self) {
-        let re = Regex::new(r"\{(.*?)\}").unwrap();
+        let re = Regex::new(r"\{\s*(.*?)\s*\}").unwrap();
         let handlebar_matches = re.find_iter(&self.cmd);
 
         let keys:Vec<_> = handlebar_matches.map(|m| m.as_str()).collect();
