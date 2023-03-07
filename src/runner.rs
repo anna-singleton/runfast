@@ -82,7 +82,7 @@ impl Runner {
 
         std::io::stdin().read_line(&mut arg).expect("error reading from stdin");
 
-        arg
+        return arg.trim().to_string()
     }
 }
 
