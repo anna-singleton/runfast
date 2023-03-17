@@ -75,6 +75,24 @@ impl Runner {
         self.cmd = newcmd;
     }
 
+    pub fn get_quit_fast(&mut self) {
+        let mut choice = String::new();
+
+        if self.quit_fast {
+            println!("Require an ENTER press after the runner exits? [y/N]?");
+        } else {
+            println!("Require an ENTER press after the runner exits? [Y/n]?")
+        }
+
+        std::io::stdin().read_line(&mut choice).expect("error reading from stdin");
+
+        self.quit_fast = match choice.trim().to_uppercase().as_str() {
+            "Y" => false,
+            "N" => true,
+            _ => self.quit_fast,
+        }
+    }
+
     fn get_arg(name: &str) -> String {
         println!("Enter value for {}", name);
 

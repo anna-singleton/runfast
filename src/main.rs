@@ -55,6 +55,11 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
         }
     }
 
+    if let Some(r) = &mut chosen_runner {
+        r.get_quit_fast();
+    }
+
+
     chosen_runner
 }
 
