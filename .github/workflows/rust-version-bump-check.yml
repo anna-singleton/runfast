@@ -1,0 +1,65 @@
+name: Ensure Version Bumped
+
+on:
+  pull_request
+
+jobs:
+  check_versions:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Install cargo-binstall
+        run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install tq
+        run: cargo binstall -y tomlq
+
+      - name: "checkout feat branch"
+        uses: actions/checkout@v4
+        with:
+          path: 'feat-branch'
+          sparse-checkout: |
+            Cargo.toml
+          sparse-checkout-cone-mode: false
+      - name: "checkout main branch"
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          path: 'main-branch'
+          sparse-checkout: |
+            Cargo.toml
+          sparse-checkout-cone-mode: false
+      - name: "report feat branch"
+        run: |
+          echo "FEAT_BRANCH_VER=$(tq -f feat-branch/Cargo.toml 'package.version')" | tee -a "$GITHUB_ENV"
+      - name: "report main branch"
+        run: |
+          echo "MAIN_BRANCH_VER=$(tq -f main-branch/Cargo.toml 'package.version')" | tee -a "$GITHUB_ENV"
+      - name: "report version change"
+        run: |
+          echo "# Version Change" >> version-change.md
+          echo "When Merged, this will update versions:" >> version-change.md
+          echo "\`$MAIN_BRANCH_VER\` -> \`$FEAT_BRANCH_VER\`" >> version-change.md
+          cat version-change.md > $GITHUB_STEP_SUMMARY
+      - name: "add PR comment"
+        uses: mshick/add-pr-comment@v2
+        with:
+          message-path: "version-change.md"
+      - name: "check version is being bumped"
+        run: |
+          # solution from here https://stackoverflow.com/a/4024263
+          verlte() {
+              [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+          }
+
+          verlt() {
+              [ "$1" = "$2" ] && return 1 || verlte $1 $2
+          }
+
+          verlt "$MAIN_BRANCH_VER" "$FEAT_BRANCH_VER"
+
+          exit "$?"
+
