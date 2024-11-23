@@ -7,6 +7,7 @@ use std::process::Command;
 use directories::BaseDirs;
 use regex::Regex;
 use serde::{Serialize, Deserialize};
+use std::collections::HashSet;
 
 use skim::*;
 
@@ -57,22 +58,50 @@ impl Runner {
     /// process choose time arguments, and do corresponding string replacements
     pub fn get_args(&mut self) {
         let re = Regex::new(r"\{\s*(.*?)\s*\}").unwrap();
-        let handlebar_matches = re.find_iter(&self.cmd);
+        let handlebar_matches = re.captures_iter(&self.cmd);
 
-        let keys:Vec<_> = handlebar_matches.map(|m| m.as_str()).collect();
+        let keys:HashSet<_> = handlebar_matches.map(|m| m[1].to_string()).collect();
 
         if keys.is_empty() {
             return;
         }
 
         let mut newcmd = self.cmd.clone();
+
+        println!("Command is: {}", &newcmd);
+
         for key in keys {
-            let value = Self::get_arg(key);
+            let value = Self::get_arg(&key);
+            // yes this regex is horrid.
+            // breakdown of it is:
+            // the \ are just literal \
+            // the centre {} is where key is put
+            // the {{ and }} are escaped { and } respectively
+            let s = format!(r"\{{{}\}}", key);
+            let re = Regex::new(&s).unwrap();
             newcmd = re.replace_all(&newcmd, value).to_string();
             println!("Command is now: {}", newcmd);
         }
 
         self.cmd = newcmd;
+    }
+
+    pub fn get_quit_fast(&mut self) {
+        let mut choice = String::new();
+
+        if self.quit_fast {
+            println!("Require an ENTER press after the runner exits? [y/N]?");
+        } else {
+            println!("Require an ENTER press after the runner exits? [Y/n]?")
+        }
+
+        std::io::stdin().read_line(&mut choice).expect("error reading from stdin");
+
+        self.quit_fast = match choice.trim().to_uppercase().as_str() {
+            "Y" => false,
+            "N" => true,
+            _ => self.quit_fast,
+        }
     }
 
     fn get_arg(name: &str) -> String {
