@@ -30,7 +30,7 @@ jobs:
       run: cargo test --release --verbose
     - name: Package Binary
       run: |
-        mv target/release/runfast . && tar czf tps-linux.tar.gz tps
+        mv target/release/runfast . && tar czf runfast-linux.tar.gz runfast
 
     - name: Create Release
       id: create_release
