@@ -930,7 +930,7 @@ checksum = "b833d8d034ea094b1ea68aa6d5c740e0d04bad9d16568d08ba6f76823a114316"
 
 [[package]]
 name = "runfast"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "clap",
  "clap_mangen",
