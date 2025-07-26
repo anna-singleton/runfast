@@ -24,5 +24,5 @@ clap = { version = "4.0.18", features = ["derive"] }
 directories = "4.0.1"
 serde = { version="1.0.147", features = ["derive"] }
 regex = "1.6.0"
-skim = "0.9.4"
+skim = "0.20.2"
 toml = "0.5.9"

@@ -15,8 +15,8 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
     let runners = runner::load_runners(&runners_path);
 
     let options = SkimOptionsBuilder::default()
-        .preview(Some(""))
-        .preview_window(Some(""))
+        .preview(Some("".to_string()))
+        .preview_window("".to_string())
         .build()
         .unwrap();
 
@@ -32,13 +32,13 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
 
     if r.is_none() {
         println!("internal runquick error :(");
-        return None
+        return None;
     }
 
     let result = r.unwrap();
 
     if result.final_event == Event::EvActAbort || result.selected_items.is_empty() {
-        return None
+        return None;
     }
 
     if result.selected_items.len() > 1 {
@@ -59,10 +59,8 @@ fn select_new_runner(runners_path: Option<String>) -> Option<Runner> {
         r.get_quit_fast();
     }
 
-
     chosen_runner
 }
-
 
 fn main() {
     let cli = Cli::parse();
@@ -73,16 +71,14 @@ fn main() {
     // to builders
     if cli.clean_cache && cli.reset_cache {
         eprintln!("You cannot clean and reset the cache at the same time!");
-        return
+        return;
     }
 
     if cli.clean_cache {
         match cache {
-            Some(mut cache) => {
-                match cache.clean_cache() {
-                    Ok(x) => println!("Cache Cleaned, Removed {} Entries.", x),
-                    Err(e) => eprintln!("Couldn't clean cache, {}", e),
-                }
+            Some(mut cache) => match cache.clean_cache() {
+                Ok(x) => println!("Cache Cleaned, Removed {} Entries.", x),
+                Err(e) => eprintln!("Couldn't clean cache, {}", e),
             },
             None => eprintln!("Cache is corrupted, cannot clean it."),
         };
@@ -102,9 +98,11 @@ fn main() {
                 if let Some(ref runner) = runner {
                     cache.add_runner(runner);
                 }
-            },
+            }
             None => {
-                eprintln!("Couldn't parse cache, intentionally not overwriting, check it for errors.");
+                eprintln!(
+                    "Couldn't parse cache, intentionally not overwriting, check it for errors."
+                );
             }
         }
         runner
@@ -112,13 +110,14 @@ fn main() {
         match cache {
             Some(ref mut cache) => match cache.try_get_runner() {
                 Some(runner) => Some(runner), // runner found in the cache
-                None => { // runner not found in the cache
+                None => {
+                    // runner not found in the cache
                     let runner = select_new_runner(cli.runners_path);
                     if let Some(ref runner) = runner {
                         cache.add_runner(runner);
                     }
                     runner
-                },
+                }
             },
             None => select_new_runner(cli.runners_path),
         }
